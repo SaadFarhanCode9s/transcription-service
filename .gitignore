@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# Uploads and generated output — runtime artifacts, not source code
+uploads/*
+!uploads/.gitkeep
+output/*
+!output/.gitkeep
+sample_audio/*.wav
+!sample_audio/.gitkeep
+
+# Whisper model cache — large binary files, not source code
+# Models are downloaded automatically on first run
+.cache/
+~/.cache/whisper/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.pytest_cache/
+
+# IDE and OS artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore

@@ -1,0 +1,27 @@
+{
+  "language": "en",
+  "duration": 31.5,
+  "transcription": "Hello everyone, welcome to this demonstration of the speech to text transcription service. This service uses OpenAI Whisper to convert audio into text with accurate timestamps.",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.25,
+      "text": "Hello everyone, welcome to this demonstration"
+    },
+    {
+      "start": 3.5,
+      "end": 8.1,
+      "text": "of the speech to text transcription service."
+    },
+    {
+      "start": 8.4,
+      "end": 14.75,
+      "text": "This service uses OpenAI Whisper to convert audio into text"
+    },
+    {
+      "start": 15.0,
+      "end": 21.3,
+      "text": "with accurate timestamps."
+    }
+  ]
+}

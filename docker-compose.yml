@@ -1,0 +1,134 @@
+# ============================================================
+# Speech-to-Text Transcription Service — Docker Compose
+# ============================================================
+#
+# This file defines the local development and single-host production
+# deployment. For multi-host production, use Kubernetes manifests instead.
+#
+# Usage:
+#   docker-compose up --build         # Build and start
+#   docker-compose up -d              # Start in background
+#   docker-compose logs -f            # Stream logs
+#   docker-compose down               # Stop and remove containers
+# ============================================================
+
+version: "3.9"
+
+services:
+  # ---------------------------------------------------------- #
+  # Main transcription API
+  # ---------------------------------------------------------- #
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime    # Use the runtime stage, not the builder
+    container_name: transcription-api
+    restart: unless-stopped  # Restart on crash; stop on explicit 'down'
+
+    ports:
+      - "${PORT:-8000}:8000"
+
+    environment:
+      # Application settings — override via .env or shell environment
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cpu}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
+      - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-500}
+      - CHUNK_DURATION_SECONDS=${CHUNK_DURATION_SECONDS:-30}
+      - CHUNK_OVERLAP_SECONDS=${CHUNK_OVERLAP_SECONDS:-2}
+      - UPLOAD_DIR=/app/uploads
+      - OUTPUT_DIR=/app/output
+
+    volumes:
+      # Persist uploads and output across container restarts.
+      # In production, mount to an NFS share or use object storage instead.
+      - uploads_data:/app/uploads
+      - output_data:/app/output
+      # Persist Whisper model cache to avoid re-downloading on every restart.
+      # Models are large (74 MB – 3 GB); re-downloading on every startup
+      # wastes bandwidth and adds ~1-5 minute cold-start time.
+      - whisper_cache:/root/.cache/whisper
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s    # Allow time for model loading before first health check
+
+    # Resource limits: prevent a single container from starving the host.
+    # Adjust based on your model size and hardware.
+    deploy:
+      resources:
+        limits:
+          memory: 4G      # base model needs ~1 GB; large-v3 needs ~10 GB
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"   # Rotate logs to prevent unbounded disk growth
+        max-file: "5"
+
+  # ---------------------------------------------------------- #
+  # FUTURE SERVICES (commented out — ready to enable)
+  # ---------------------------------------------------------- #
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: transcription-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: transcription-worker
+  #   command: celery -A app.worker worker --concurrency=1 --loglevel=info
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     - CELERY_BROKER_URL=redis://redis:6379/0
+  #     - CELERY_RESULT_BACKEND=redis://redis:6379/0
+  #   volumes:
+  #     - uploads_data:/app/uploads
+  #     - output_data:/app/output
+  #     - whisper_cache:/root/.cache/whisper
+
+# ---------------------------------------------------------- #
+# Persistent volumes
+# ---------------------------------------------------------- #
+volumes:
+  uploads_data:
+    driver: local
+  output_data:
+    driver: local
+  whisper_cache:
+    driver: local
+  # redis_data:
+  #   driver: local
+
+# ---------------------------------------------------------- #
+# Networks
+# ---------------------------------------------------------- #
+networks:
+  default:
+    name: transcription-network

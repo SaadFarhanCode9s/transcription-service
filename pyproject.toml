@@ -1,0 +1,39 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=75",
+]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests that require external services (FFmpeg, Whisper)",
+    "slow: marks tests that take >5 seconds to run",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/__init__.py",
+    "app/config/__init__.py",
+    "app/api/__init__.py",
+    "app/services/__init__.py",
+    "app/utils/__init__.py",
+    "app/models/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]
